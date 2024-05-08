@@ -6,7 +6,7 @@ const createUser = async(req, res ) => {
         const {name , email, password, confirmPassword, phone} = req.body
         const reg = /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/
         const isCheckEmail = reg.test(email)
-        if(!name || !email || !password || !confirmPassword || !phone){
+        if( !email || !password || !confirmPassword ){
             return res.status(200).json({
                 status: 'ERR',
                 message: 'The input is required'
@@ -34,7 +34,7 @@ const createUser = async(req, res ) => {
 const loginUser = async(req, res ) => {
     try{
         const {email, password} = req.body
-        const reg = /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*  $/
+        const reg = /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/
         const isCheckEmail = reg.test(email)
         if( !email || !password ){
             return res.status(200).json({
@@ -48,7 +48,15 @@ const loginUser = async(req, res ) => {
             })
         }  
         const response = await UserService.loginUser(req.body)
-        return res.status(200).json(response)
+        const { refresh_token, ...newRespone} =  response
+        // console.log('response', response)
+        res.cookie('refresh_token', refresh_token, {
+            httpOnly: true,
+            secure: false,
+            samesime: 'strict'
+            
+        })
+        return res.status(200).json(newRespone)
     }catch(e){
         return res.status(404).json({
             message: e
@@ -122,8 +130,9 @@ const getDetailsUser = async(req, res ) => {
 }
 
 const refreshToken = async(req, res ) => {
+   
     try{
-        const token = req.headers.token.split(' ')[1]
+        const token = req.cookies.refresh_token
         if(!token){
             return res.status(200).json({
                 status: 'ERR',
@@ -139,6 +148,38 @@ const refreshToken = async(req, res ) => {
     }
 }
 
+const logoutUser = async(req, res ) => {
+     
+    try{
+        res.clearCookie('refresh_token')
+        return res.status(200).json({
+            stats : 'OK',
+            message : 'Logout Sucessfully'
+        })
+    }catch(e){
+        return res.status(404).json({
+            message: e
+        })
+    }
+}
+
+const deleteMany = async (req, res) => {
+    try {
+        const ids = req.body.ids
+        if (!ids) {
+            return res.status(200).json({
+                status: 'ERR',
+                message: 'The ids is required'
+            })
+        }
+        const response = await UserService.deleteManyUser(ids)
+        return res.status(200).json(response)
+    } catch (e) {
+        return res.status(404).json({
+            message: e
+        })
+    }
+}
 
 module.exports = {
     createUser,
@@ -147,5 +188,7 @@ module.exports = {
     deleteUser,
     getAllUser,
     getDetailsUser,
-    refreshToken
+    refreshToken,
+    logoutUser,
+    deleteMany
 }
