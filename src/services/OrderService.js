@@ -66,11 +66,13 @@ const createOrder = (newOrder) => {
                     })
                 }
             }
+            console.log('results', results)
         } catch (e) {
-        //   console.log('e', e)
+          console.log('e', e)
             reject(e)
         }
     })
+    
 }
 
 // const deleteManyProduct = (ids) => {

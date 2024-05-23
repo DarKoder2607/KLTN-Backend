@@ -1,5 +1,7 @@
 const User = require("../models/UserModel")
 const bcrypt = require("bcrypt")
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 const {genneralAccessToken, genneralRefreshToken} = require("./JwtService")
 
 const createUser = (newUser) => {
@@ -53,7 +55,7 @@ const loginUser = (userLogin) => {
             if(!comparePassword){
                 resolve({
                     status: 'ERR',
-                    message: 'The password or user incorrect'
+                    message: 'The password or email incorrect'
                 })
             }
             const access_token = await genneralAccessToken({
@@ -181,6 +183,71 @@ const deleteManyUser = (ids) => {
     })
 }
 
+
+
+const generateResetToken = (email) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const user = await User.findOne({ email });
+            if (!user) {
+                resolve({
+                    status: 'ERR',
+                    message: 'User not found'
+                });
+            }
+            const resetToken = crypto.randomBytes(32).toString("hex");
+            const hashedToken = bcrypt.hashSync(resetToken, 10);
+            user.resetPasswordToken = hashedToken;
+            user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+            await user.save();
+            resolve({
+                status: 'OK',
+                message: 'Reset token generated',
+                resetToken
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
+const resetPassword = (token, newPassword) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const user = await User.findOne({
+                resetPasswordToken: { $exists: true },
+                resetPasswordExpires: { $gt: Date.now() }
+            });
+            if (!user || !bcrypt.compareSync(token, user.resetPasswordToken)) {
+                resolve({
+                    status: 'ERR',
+                    message: 'Invalid or expired token'
+                });
+            }
+            const hashedPassword = bcrypt.hashSync(newPassword, 10);
+            user.password = hashedPassword;
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpires = undefined;
+            await user.save();
+            resolve({
+                status: 'OK',
+                message: 'Password reset successful'
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
+const findUserByEmail = async (email) => {
+    try {
+        const user = await User.findOne({ email });
+        return user;  
+    } catch (error) {
+        throw new Error(error.message);
+    }
+}
+
 module.exports = {
     createUser,
     loginUser,
@@ -188,5 +255,9 @@ module.exports = {
     deleteUser,
     getAllUser,
     getDetailsUser,
-    deleteManyUser
-}
+    deleteManyUser,
+    generateResetToken,
+    resetPassword,
+    findUserByEmail
+};
+

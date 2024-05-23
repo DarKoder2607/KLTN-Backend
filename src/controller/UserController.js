@@ -1,12 +1,13 @@
 const UserService = require('../services/UserService')
 const JwtService = require('../services/JwtService')
+const EmailService = require("../services/EmailService")
 
 const createUser = async(req, res ) => {
     try{
         const {name , email, password, confirmPassword, phone} = req.body
         const reg = /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/
         const isCheckEmail = reg.test(email)
-        if( !email || !password || !confirmPassword ){
+        if(!name || !email || !password || !confirmPassword || !phone){
             return res.status(200).json({
                 status: 'ERR',
                 message: 'The input is required'
@@ -181,6 +182,60 @@ const deleteMany = async (req, res) => {
     }
 }
 
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: 'Email is required'
+            });
+        }
+        const user = await UserService.findUserByEmail(email);
+        if (!user) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: 'Email does not exist'
+            });
+        }
+        const response = await UserService.generateResetToken(email);
+        if (response.status === 'OK') {
+            await EmailService.sendResetPasswordEmail(email, response.resetToken);
+        }
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(500).json({
+            status: 'ERR',
+            message: e.message
+        });
+    }
+}
+
+const resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword, confirmPassword } = req.body;
+        if (!token || !newPassword || !confirmPassword) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: 'All fields are required'
+            });
+        }
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: 'Passwords do not match'
+            });
+        }
+        const response = await UserService.resetPassword(token, newPassword);
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(500).json({
+            status: 'ERR',
+            message: e.message
+        });
+    }
+}
+
 module.exports = {
     createUser,
     loginUser,
@@ -190,5 +245,8 @@ module.exports = {
     getDetailsUser,
     refreshToken,
     logoutUser,
-    deleteMany
+    deleteMany,
+    forgotPassword,
+    resetPassword
+
 }
