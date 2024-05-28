@@ -206,10 +206,36 @@ const getAllOrder = () => {
     })
 }
 
+const updateOrderStatus = (orderId, updateFields) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const order = await Order.findByIdAndUpdate(
+                orderId,
+                { $set: updateFields },
+                { new: true }
+            );
+            if (!order) {
+                resolve({
+                    status: 'ERR',
+                    message: 'The order is not defined'
+                });
+            }
+            resolve({
+                status: 'OK',
+                message: 'SUCCESS',
+                data: order
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
 module.exports = {
     createOrder,
     getAllOrderDetails,
     getOrderDetails,
     cancelOrderDetails,
-    getAllOrder
+    getAllOrder,
+    updateOrderStatus
 }

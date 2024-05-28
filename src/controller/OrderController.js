@@ -88,10 +88,44 @@ const getAllOrder = async (req, res) => {
     }
 }
 
+const markAsDelivered = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        if (!orderId) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: 'The orderId is required'
+            });
+        }
+        const response = await OrderService.updateOrderStatus(orderId, { isDelivered: true, deliveredAt: new Date() });
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(500).json({ message: e });
+    }
+}
+
+const markAsPaid = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        if (!orderId) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: 'The orderId is required'
+            });
+        }
+        const response = await OrderService.updateOrderStatus(orderId, { isPaid: true, paidAt: new Date() });
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(500).json({ message: e });
+    }
+}
+
 module.exports = {
     createOrder,
     getAllOrderDetails,
     getDetailsOrder,
     cancelOrderDetails,
-    getAllOrder
+    getAllOrder,
+    markAsDelivered,
+    markAsPaid
 }
