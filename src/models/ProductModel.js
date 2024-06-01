@@ -19,6 +19,7 @@ const productSchema = new mongoose.Schema(
         microUSB: {type: String, required: true},
         battery: {type: String, required: true},
         
+        relatedImages: { type: [String], validate: [arrayLimit, '{PATH} exceeds the limit of 6'] },
         discount: {type: Number},
         selled: {type: Number}
     },
@@ -26,5 +27,10 @@ const productSchema = new mongoose.Schema(
         timestamps: true,
     }
 );
+
+function arrayLimit(val) {
+    return val.length <= 6;
+}
+
 const Product = mongoose.model('Product', productSchema)
 module.exports = Product;

@@ -3,7 +3,7 @@ const ProductService = require('../services/ProductService')
 const createProduct = async(req, res ) => {
     try{
         const {name , image, type, countInStock, price, rating, screen, os, camera,cameraFront,cpu,ram,
-            rom, microUSB, battery, discount} = req.body
+            rom, microUSB, battery, discount, relatedImages} = req.body
         if(!name || !image || !type || !countInStock || !price || !rating || !discount || !screen || !os || !camera || !cameraFront || !cpu || !ram || !rom || !microUSB || !battery){
             return res.status(200).json({
                 status: 'ERR',
