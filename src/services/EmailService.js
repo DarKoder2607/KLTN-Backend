@@ -33,7 +33,7 @@ const sendEmailCreateOrder = async (email,orderItems) => {
   // send mail with defined transport object
   let info = await transporter.sendMail({
     from: process.env.MAIL_ACCOUNT, // sender address
-    to: "nguyenthanhdanh200201@gmail.com", // list of receivers
+    to: email, // list of receivers
     subject: "Bạn đã đặt hàng tại shop DH PhoneStore", // Subject line
     text: "Hello world?", // plain text body
     html: `<div><b>Bạn đã đặt hàng thành công tại shop DH PhoneStore</b></div> ${listItem}`,
@@ -53,11 +53,11 @@ const sendResetPasswordEmail = async (email, token) => {
     },
   });
 
-  let resetLink = `https://tlcn-backend-9bho.onrender.com/reset-password/${token}`;
+  let resetLink = `https://tlcn-frontend-six.vercel.app/reset-password/${token}`;
 
   let info = await transporter.sendMail({
     from: process.env.MAIL_ACCOUNT,
-    to: "nguyenthanhdanh200201@gmail.com",
+    to: email,
     subject: "Password Reset Request",
     text: "You requested a password reset",
     html: `<div>
