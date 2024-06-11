@@ -53,7 +53,7 @@ const sendResetPasswordEmail = async (email, token) => {
     },
   });
 
-  let resetLink = `https://tlcn-frontend-six.vercel.app/reset-password/${token}`;
+  let resetLink = `http://localhost:3000/reset-password/${token}`;
 
   let info = await transporter.sendMail({
     from: process.env.MAIL_ACCOUNT,
