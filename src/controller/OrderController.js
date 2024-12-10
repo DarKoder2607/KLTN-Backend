@@ -2,14 +2,17 @@ const OrderService = require('../services/OrderService')
 
 const createOrder = async (req, res) => {
     try { 
-        const { paymentMethod, itemsPrice, shippingPrice, totalPrice, fullName, address, city, phone } = req.body
+        const { paymentMethod, itemsPrice, shippingPrice, totalPrice, fullName, address, city, phone, rewardPointsUsed } = req.body
         if (!paymentMethod || !itemsPrice || !shippingPrice || !totalPrice || !fullName || !address || !city || !phone) {
             return res.status(200).json({
                 status: 'ERR',
                 message: 'The input is required'
             })
         }
-        const response = await OrderService.createOrder(req.body)
+        const response = await OrderService.createOrder({ 
+            ...req.body, 
+            rewardPointsUsed 
+        } )
         return res.status(200).json(response)
     } catch (e) {
         return res.status(404).json({
@@ -17,6 +20,38 @@ const createOrder = async (req, res) => {
         })
     }
 }
+
+// const createOrder = async (req, res) => {
+//     try {
+//         const { paymentMethod, itemsPrice, shippingPrice, totalPrice, fullName, address, city, phone, orderItems } = req.body;
+        
+//         if ( !itemsPrice || !totalPrice || !fullName || !address || !city || !phone || !orderItems.length) {
+//             return res.status(400).json({
+//                 status: 'ERR',
+//                 message: 'All required fields must be provided'
+//             });
+//         }
+        
+//         const newOrder = {
+//             orderItems,
+//             paymentMethod,
+//             itemsPrice,
+//             shippingPrice,
+//             totalPrice,
+//             fullName,
+//             address,
+//             city,
+//             phone,
+//             user: req.user.id,
+//             email: req.user.email, // Giả định rằng email của user có sẵn trong req.user
+//         };
+
+//         const response = await OrderService.createOrder(newOrder);
+//         return res.status(200).json(response);
+//     } catch (error) {
+//         return res.status(500).json({ message: error.message });
+//     }
+// };
 
 const getAllOrderDetails = async (req, res) => {
     try {
@@ -120,6 +155,17 @@ const markAsPaid = async (req, res) => {
     }
 }
 
+const getTotalOrderPriceByProduct = async (req, res) => {
+    try {
+        const response = await OrderService.getTotalOrderPriceByProduct();
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(404).json({
+            message: e,
+        });
+    }
+};
+
 module.exports = {
     createOrder,
     getAllOrderDetails,
@@ -127,5 +173,6 @@ module.exports = {
     cancelOrderDetails,
     getAllOrder,
     markAsDelivered,
-    markAsPaid
+    markAsPaid,
+    getTotalOrderPriceByProduct 
 }

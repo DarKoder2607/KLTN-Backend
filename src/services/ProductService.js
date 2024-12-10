@@ -1,9 +1,25 @@
 const Product = require("../models/ProductModel")
-
+const Order = require ("../models/OrderProduct")
+const mongoose = require('mongoose');
 const createProduct = (newProduct) => {
-    return new Promise(async (resolve, reject) =>{
-        const {name , image, type, countInStock, price, rating, screen, os, camera, cameraFront, cpu, ram,
-            rom, microUSB, battery, discount, relatedImages} = newProduct
+    return new Promise(async (resolve, reject) => {
+        const {
+          name,
+          image,
+          type,
+          countInStock,
+          price,
+          rating,
+          discount,
+          relatedImages,
+          deviceType,
+          phoneSpecs,
+          watchSpecs,
+          laptopSpecs,
+          tabletSpecs,
+          headphoneSpecs,
+          loudspeakerSpecs,
+        } = newProduct;
         try{
             const checkProduct = await Product.findOne({
                 name: name
@@ -11,28 +27,48 @@ const createProduct = (newProduct) => {
             if(checkProduct !== null){
                 resolve({
                     status: 'OK',
-                    message: 'The name of product is already'
+                    message: 'The name of product is already in use'
                 })
             }
+            
+            let specs;
+            switch (deviceType) {
+              case "phone":
+                specs = { phoneSpecs };
+                break;
+              case "watch":
+                specs = { watchSpecs };
+                break;
+              case "laptop":
+                specs = { laptopSpecs };
+                break;
+              case "tablet":
+                specs = { tabletSpecs };
+                break;
+              case "headphone":
+                specs = { headphoneSpecs };
+                break;
+              case "loudspeaker":
+                specs = { loudspeakerSpecs };
+                break;
+              default:
+                return resolve({
+                  status: "ERR",
+                  message: "Invalid device type",
+                });
+            }
             const createdProduct = await Product.create({
-                name , 
-                image, 
-                type, 
-                countInStock, 
-                price, 
-                rating, 
-                screen, 
-                os, 
-                camera, 
-                cameraFront, 
-                cpu, 
-                ram,
-                rom, 
-                microUSB, 
-                battery, 
-                discount, 
-                relatedImages
-            })
+                name,
+                image,
+                type,
+                countInStock,
+                price,
+                rating,
+                discount,
+                relatedImages,
+                deviceType,
+                ...specs,
+              });
             if(createdProduct){
                 resolve({
                     status: 'OK',
@@ -59,7 +95,9 @@ const updateProduct = (id , data) => {
                     message: 'The product is not defined'
                 })
             }
-            const updatedProduct = await Product.findByIdAndUpdate(id, data, {new: true})
+
+            const { _id, ...updateData } = data;
+            const updatedProduct = await Product.findByIdAndUpdate(id, updateData , {new: true})
 
             resolve({
                 status: 'OK',
@@ -120,10 +158,11 @@ const deleteProduct = (id) => {
     })
 }
 
-const getAllProduct = (limit, page, sort, filter ) => {
+const getAllProduct = (limit, page, sort, filter, priceRange, rating ) => {
     
     return new Promise(async (resolve, reject) =>{
         try{
+            const query = {};
             const totalProduct = await Product.countDocuments()
             if(filter ){                
                 label = filter[0]
@@ -166,6 +205,27 @@ const getAllProduct = (limit, page, sort, filter ) => {
     })
 }
 
+const getProductsByDeviceType = (deviceType, limit, page) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const query = { deviceType };
+            const totalProduct = await Product.countDocuments(query);
+            const allProduct = await Product.find(query).limit(limit).skip(page * limit);
+            resolve({
+                status: 'OK',
+                message: 'SUCCESS',
+                data: allProduct,
+                total: totalProduct,
+                pageCurrent: Number(page + 1),
+                totalPage: Math.ceil(totalProduct / limit),
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+
 const getAllType = () => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -174,6 +234,21 @@ const getAllType = () => {
                 status: 'OK',
                 message: 'Success',
                 data: allType,
+            })
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
+
+const getAllDeviceType = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const allDeviceType = await Product.distinct('deviceType')
+            resolve({
+                status: 'OK',
+                message: 'Success',
+                data: allDeviceType,
             })
         } catch (e) {
             reject(e)
@@ -195,6 +270,163 @@ const deleteManyProduct = (ids) => {
     })
 }
 
+//review
+const addProductReview = (userId, productId, reviewData) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const product = await Product.findById(productId);
+
+            if (!product) {
+                return resolve({
+                    status: 'ERR',
+                    message: 'Product not found',
+                });
+            }
+
+            // Check if user has purchased the product
+            const userHasPurchased = await Order.findOne({
+                'orderItems.product': new mongoose.Types.ObjectId(productId),
+                user: new mongoose.Types.ObjectId(userId),
+                isPaid: true,
+            }).populate('orderItems.product');
+            
+            // console.log('Order check failed:');
+            // console.log('Product ID:', productId);
+            // console.log('User ID:', userId);
+            // console.log('Query result:', userHasPurchased);
+
+            if (!userHasPurchased) {
+                
+                return resolve({
+                    status: 'ERR',
+                    message: 'Bạn phải mua sản phẩm này từ website để có thể đánh giá sản phẩm',
+                });
+            }
+
+            // Check if user has already reviewed the product
+            const alreadyReviewed = product.reviews.find(
+                (r) => r.user.toString() === userId
+            );
+            if (alreadyReviewed) {
+                return resolve({
+                    status: 'ERR',
+                    message: 'Bạn đã đánh giá sản phẩm này rồi',
+                });
+            }
+            const userName = userHasPurchased.shippingAddress?.fullName || 'Anonymous';
+            // Add new review
+            const newReview = {
+                user: userId,
+                name: userName, // Use user's name if available
+                rating: reviewData.rating,
+                comment: reviewData.comment,
+            };
+            product.reviews.push(newReview);
+
+            // Recalculate the average rating
+            product.numReviews = product.reviews.length;
+            product.rating =
+                product.reviews.reduce((acc, item) => acc + item.rating, 0) /
+                product.reviews.length;
+
+            await product.save();
+
+            resolve({
+                status: 'OK',
+                message: 'Review added successfully',
+                data: newReview,
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+
+const getProductReviews = (productId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const product = await Product.findById(productId).populate('reviews.user', 'name email');
+            if (!product) {
+                return resolve({
+                    status: 'ERR',
+                    message: 'Product not found',
+                });
+            }
+
+            const reviews = product.reviews.map((review) => ({
+                ...review.toObject(),
+                comment: review.isHidden
+                    ? 'Bình luận đã bị ẩn do vi phạm điều lệ của website'
+                    : review.comment,
+            }));
+
+            resolve({
+                status: 'OK',   
+                message: 'SUCCESS',
+                data: reviews,
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+const getTopSellingProducts = async (limit = 6) => {
+    try {
+      // Sort by 'selled' in descending order and limit the results
+      const topSellingProducts = await Product.find({})
+        .sort({ selled: -1 })
+        .limit(limit);
+      return topSellingProducts;
+    } catch (error) {
+      throw new Error(`Error fetching top selling products: ${error.message}`);
+    }
+  };
+
+const filterProducts = (filters, limit, page) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const { type, deviceType, minPrice, maxPrice, minRating, maxRating } = filters;
+
+            // Build query object dynamically based on filters
+            let query = {};
+            if (type !== 'all') {
+                query.type = type;
+            }
+            if (deviceType) query.deviceType = deviceType;
+            if (minPrice || maxPrice) {
+                query.price = {};
+                if (minPrice) query.price.$gte = minPrice;
+                if (maxPrice) query.price.$lte = maxPrice;
+            }
+            if (minRating || maxRating) {
+                query.rating = {};
+                if (minRating) query.rating.$gte = minRating;
+                if (maxRating) query.rating.$lte = maxRating;
+            }
+
+            // Pagination setup
+            const totalProducts = await Product.countDocuments(query);
+            const filteredProducts = await Product.find(query)
+                .limit(limit)
+                .skip(page * limit);
+
+            resolve({
+                status: 'OK',
+                message: 'Filtered products fetched successfully',
+                data: filteredProducts,
+                total: totalProducts,
+                pageCurrent: Number(page + 1),
+                totalPage: Math.ceil(totalProducts / limit),
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+
 module.exports={
     createProduct,
     updateProduct,
@@ -202,5 +434,11 @@ module.exports={
     deleteProduct,
     getAllProduct,
     deleteManyProduct,
-    getAllType
+    getAllType,
+    addProductReview,
+    getProductReviews,
+    getAllDeviceType,
+    getProductsByDeviceType,
+    filterProducts,
+    getTopSellingProducts
 }

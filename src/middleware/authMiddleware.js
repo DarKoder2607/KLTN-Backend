@@ -36,6 +36,7 @@ const authUserMiddleware = (req, res, next) =>{
         }
         const { payload } = user
         if(user?.isAdmin || user?.id === userId){
+           
             next()
         }else{
             return res.status(404).json({
@@ -45,8 +46,84 @@ const authUserMiddleware = (req, res, next) =>{
         }
     });
 }
+const authCartMiddleware = (req, res, next) => {
+    const token = req.headers.token?.split(' ')[1]; // Lấy token từ header
+    if (!token) {
+      return res.status(401).json({
+        message: 'User not authenticated. Token missing.',
+        status: 'ERROR'
+      });
+    }
+  
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, user) {
+      if (err) {
+        return res.status(403).json({
+          message: 'Token is invalid or expired.',
+          status: 'ERROR'
+        });
+      }
+  
+      req.user = user; // Lưu thông tin người dùng vào request
+      next();
+    });
+  };
+  
+const authUserRMiddleware = (req, res, next) => {
+    const tokenHeader = req.headers.token;
+    if (!tokenHeader) {
+        return res.status(401).json({
+            message: "Token is missing",
+            status: "ERROR",
+        });
+    }
+
+    const token = tokenHeader.split(" ")[1];
+    if (!token) {
+        return res.status(401).json({
+            message: "Token format is invalid",
+            status: "ERROR",
+        });
+    }
+
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, user) {
+        if (err) {
+            return res.status(403).json({
+                message: "Invalid or expired token",
+                status: "ERROR",
+            });
+        }
+
+        req.user = user;
+        next();
+       
+    });
+};
+
+const authRMiddleware = (req, res, next) => {
+    const token = req.headers.token.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, user) {
+        if (err) {
+            return res.status(404).json({
+                message: 'Authentication failed',
+                status: 'ERROR',
+            });
+        }
+        if (user?.isAdmin) {
+            req.user = user; // Gắn user vào request
+            next();
+        } else {
+            return res.status(403).json({
+                message: 'Forbidden: Admins only',
+                status: 'ERROR',
+            });
+        }
+    });
+};
 
 module.exports={
     authMiddleware,
-    authUserMiddleware
+    authUserMiddleware,
+    authUserRMiddleware,
+    authRMiddleware,
+    authCartMiddleware
 }

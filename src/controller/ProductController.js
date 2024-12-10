@@ -1,10 +1,35 @@
 const ProductService = require('../services/ProductService')
+const Product = require("../models/ProductModel")
 
 const createProduct = async(req, res ) => {
+    
     try{
-        const {name , image, type, countInStock, price, rating, screen, os, camera,cameraFront,cpu,ram,
-            rom, microUSB, battery, discount, relatedImages} = req.body
-        if(!name || !image || !type || !countInStock || !price || !rating || !discount || !screen || !os || !camera || !cameraFront || !cpu || !ram || !rom || !microUSB || !battery){
+        const {
+            name,
+            image,
+            type,
+            countInStock,
+            price,
+            rating,
+            discount,
+            relatedImages,
+            deviceType,
+            phoneSpecs,
+            watchSpecs,
+            laptopSpecs,
+            tabletSpecs,
+            headphoneSpecs,
+            loudspeakerSpecs,
+          } = req.body;
+          if (
+            !name ||
+            !image ||
+            !type ||
+            !countInStock ||
+            !price ||
+            !discount ||
+            !deviceType
+          ) {
             return res.status(200).json({
                 status: 'ERR',
                 message: 'The input is required'
@@ -20,6 +45,7 @@ const createProduct = async(req, res ) => {
 }
 
 const updateProduct = async(req, res ) => {
+    
     try{
         const productId = req.params.id
         const data = req.body
@@ -86,6 +112,19 @@ const getAllProduct = async(req, res ) => {
     }
 }
 
+const getProductsByDeviceType = async (req, res) => {
+    try {
+        const { deviceType, limit, page } = req.query;
+        const response = await ProductService.getProductsByDeviceType(deviceType, Number(limit), Number(page));
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(404).json({
+            message: e
+        });
+    }
+};
+
+
 const getAllType = async (req, res) => {
     try {
         const response = await ProductService.getAllType()
@@ -96,6 +135,18 @@ const getAllType = async (req, res) => {
         })
     }
 }
+
+const getAllDeviceType = async (req, res) => {
+    try {
+        const response = await ProductService.getAllDeviceType()
+        return res.status(200).json(response)
+    } catch (e) {
+        return res.status(404).json({
+            message: e
+        })
+    }
+}
+
 
 const deleteMany = async (req, res) => {
     try {
@@ -115,6 +166,156 @@ const deleteMany = async (req, res) => {
     }
 }
 
+//review    
+const addProductReview = async (req, res) => {
+    try {
+        const userId = req.user?.id; // Lấy user ID từ token đã xác thực
+        const productId = req.params.id;
+        const { rating, comment } = req.body;
+
+        if (!rating || !comment) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: 'Rating and comment are required',
+            });
+        }
+
+        const response = await ProductService.addProductReview(userId, productId, { rating, comment });
+
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(404).json({
+            status: 'ERR',
+            message: e.message,
+        });
+    }
+};
+
+const getProductReviews = async (req, res) => {
+    try {
+        const productId = req.params.id;
+
+        const response = await ProductService.getProductReviews(productId);
+
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(404).json({
+            status: 'ERR',
+            message: e.message,
+        });
+    }
+};
+
+const hideProductReview = async (req, res) => {
+    try {
+        const { productId, reviewId } = req.params;
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                status: 'ERR',
+                message: 'Product not found',
+            });
+        }
+
+        const review = product.reviews.id(reviewId);
+        if (!review) {
+            return res.status(404).json({
+                status: 'ERR',
+                message: 'Review not found',
+            });
+        }
+
+        review.isHidden = true;
+        await product.save();
+
+        return res.status(200).json({
+            status: 'OK',
+            message: 'Review hidden successfully',
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: 'ERR',
+            message: error.message,
+        });
+    }
+};
+const unhideProductReview = async (req, res) => {
+    try {
+        const { productId, reviewId } = req.params;
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                status: 'ERR',
+                message: 'Product not found',
+            });
+        }
+
+        const review = product.reviews.id(reviewId);
+        if (!review) {
+            return res.status(404).json({
+                status: 'ERR',
+                message: 'Review not found',
+            });
+        }
+
+        review.isHidden = false;
+        await product.save();
+
+        return res.status(200).json({
+            status: 'OK',
+            message: 'Review unhidden successfully',
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: 'ERR',
+            message: error.message,
+        });
+    }
+};
+
+const filterProducts = async (req, res) => {
+    try {
+        const { type, deviceType, minPrice, maxPrice, minRating, maxRating, limit, page } = req.query;
+
+        const filters = {
+            type,
+            deviceType,
+            minPrice: Number(minPrice),
+            maxPrice: Number(maxPrice),
+            minRating: Number(minRating),
+            maxRating: Number(maxRating),
+        };
+
+        const response = await ProductService.filterProducts(filters, Number(limit), Number(page));
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(404).json({
+            message: e.message || 'Error occurred',
+        });
+    }
+};
+
+const getTopSellingProducts = async (req, res) => {
+    try {
+      // Get the limit from query params or default to 6
+      const limit = parseInt(req.query.limit) || 6;
+      const topSellingProducts = await ProductService.getTopSellingProducts(limit);
+  
+      res.status(200).json({
+        success: true,
+        data: topSellingProducts,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  };
+  
+
 module.exports = {
     createProduct,
     updateProduct,
@@ -122,5 +323,13 @@ module.exports = {
     deleteProduct,
     getAllProduct,
     deleteMany,
-    getAllType
+    getAllType,
+    getProductReviews,
+    addProductReview,
+    hideProductReview,
+    unhideProductReview,
+    getAllDeviceType,
+    getProductsByDeviceType,
+    filterProducts,
+    getTopSellingProducts
 }

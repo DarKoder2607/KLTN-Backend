@@ -32,6 +32,38 @@ const createUser = async(req, res ) => {
     }
 }
 
+const createGoogleUser = async (req, res) => {
+    try {
+        const { name, email, picture } = req.body;
+
+        if (!name || !email || !picture) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: 'Google user data is incomplete'
+            });
+        }
+
+        const googleUser = { name, email, picture};
+        const response = await UserService.createGoogleUser(googleUser);
+
+        // Đặt cookie refresh token
+        const { refresh_token, ...newResponse } = response;
+        res.cookie('refresh_token', refresh_token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'strict'
+        });
+
+        return res.status(200).json(newResponse);
+    } catch (e) {
+        return res.status(500).json({
+            status: 'ERR',
+            message: e.message
+        });
+    }
+};
+
+
 const loginUser = async(req, res ) => {
     try{
         const {email, password} = req.body
@@ -247,6 +279,7 @@ module.exports = {
     logoutUser,
     deleteMany,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    createGoogleUser
 
 }

@@ -30,6 +30,8 @@ const orderSchema = new mongoose.Schema({
     paidAt: { type: Date },
     isDelivered: { type: Boolean, default: false },
     deliveredAt: { type: Date },
+    rewardPointsEarned: { type: Number, default: 0 },  
+    rewardPointsUsed: { type: Number, default: 0 },
 },
     {
         timestamps: true,

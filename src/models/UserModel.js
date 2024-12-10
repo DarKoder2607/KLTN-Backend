@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema(
         city: {type: String},
         // access_token: {type: String, required: true},
         // refresh_token: {type: String, required: true},
+        rewardPoints: { type: Number, default: 0 },
         resetPasswordToken: {type: String},
         resetPasswordExpires: {type: Date}
     },

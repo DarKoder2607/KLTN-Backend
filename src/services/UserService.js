@@ -37,6 +37,43 @@ const createUser = (newUser) => {
     })
 }
 
+const createGoogleUser = (googleUser) => {
+    return new Promise(async (resolve, reject) => {
+        const { name, email, picture} = googleUser;   
+        try { 
+            let user = await User.findOne({ email: email });
+            if (!user) { 
+                user = await User.create({
+                    name,
+                    email,
+                    avatar: picture,  
+                    password: 'defaultpassword',  
+                });
+            }
+ 
+            const access_token = await genneralAccessToken({
+                id: user.id,
+                isAdmin: user.isAdmin
+            });
+
+            const refresh_token = await genneralRefreshToken({
+                id: user.id,
+                isAdmin: user.isAdmin
+            });
+
+            resolve({
+                status: 'OK',
+                message: user ? 'Google login success' : 'Account created via Google',
+                data: user,
+                access_token,
+                refresh_token
+            });
+        } catch (e) {
+            reject(e);  
+        }
+    });
+};
+
 const loginUser = (userLogin) => {
     return new Promise(async (resolve, reject) =>{
         const { email, password} = userLogin
@@ -198,7 +235,7 @@ const generateResetToken = (email) => {
             const resetToken = crypto.randomBytes(32).toString("hex");
             const hashedToken = bcrypt.hashSync(resetToken, 10);
             user.resetPasswordToken = hashedToken;
-            user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+            user.resetPasswordExpires = Date.now() + 3600000;  
             await user.save();
             resolve({
                 status: 'OK',
@@ -258,6 +295,7 @@ module.exports = {
     deleteManyUser,
     generateResetToken,
     resetPassword,
-    findUserByEmail
+    findUserByEmail,
+    createGoogleUser
 };
 
