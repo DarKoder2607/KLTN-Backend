@@ -5,6 +5,7 @@ const routes = require("./routes");
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const cors= require('cors');
+const session = require('express-session');
 
 dotenv.config()
 
@@ -18,8 +19,17 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 
-routes(app);
+app.use(session({
+    secret: process.env.SESSION_SECRET ,
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        maxAge: 60 * 60 * 1000  
+    }
+}));
 
+
+routes(app);
 
 mongoose.connect(`${process.env.MONGO_DB}`)
     .then(()=> {
