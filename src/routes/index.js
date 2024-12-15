@@ -4,6 +4,7 @@ const OrderRouter = require('./OrderRouter')
 const PaymentRouter = require('./PaymentRouter')
 const CartRouter = require('./CartRouter')
 const ChatRouter = require('./ChatRouter')
+const EventRouter= require('./EventRouter')
 
 
 const routes = (app) => {
@@ -13,6 +14,7 @@ const routes = (app) => {
     app.use('/api/payment', PaymentRouter)
     app.use('/api/cart', CartRouter)
     app.use('/api/chat', ChatRouter)
+    app.use('/api/event', EventRouter)
 
 }
 

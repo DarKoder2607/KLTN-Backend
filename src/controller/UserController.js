@@ -268,6 +268,79 @@ const resetPassword = async (req, res) => {
     }
 }
 
+const lockUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        if (!userId) {
+            return res.status(200).json({
+                status: 'ERR',
+                message: 'The userId is required'
+            });
+        }
+        const response = await UserService.lockUserAccount(userId);
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(404).json({
+            message: e
+        });
+    }
+};
+
+const unlockUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        if (!userId) {
+            return res.status(200).json({
+                status: 'ERR',
+                message: 'The userId is required'
+            });
+        }
+        const response = await UserService.unlockUserAccount(userId);
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(404).json({
+            message: e
+        });
+    }
+};
+
+
+const getUserNotifications = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const notifications = await UserService.getUserNotifications(userId);
+
+        return res.status(200).json({
+            status: 'OK',
+            notifications: notifications
+        });
+    } catch (error) {
+        return res.status(400).json({
+            status: 'ERR',
+            message: error.message
+        });
+    }
+};
+
+const markNotificationsAsRead = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const notifications = await UserService.markNotificationsAsRead(userId);
+
+        return res.status(200).json({
+            status: 'OK',
+            message: 'Tất cả thông báo đã được đánh dấu là đã đọc',
+            notifications: notifications
+        });
+    } catch (error) {
+        return res.status(400).json({
+            status: 'ERR',
+            message: error.message
+        });
+    }
+};
+
+
 module.exports = {
     createUser,
     loginUser,
@@ -280,6 +353,10 @@ module.exports = {
     deleteMany,
     forgotPassword,
     resetPassword,
-    createGoogleUser
+    createGoogleUser,
+    lockUser,
+    unlockUser,
+    getUserNotifications,
+    markNotificationsAsRead
 
 }

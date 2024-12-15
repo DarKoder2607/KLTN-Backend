@@ -14,6 +14,7 @@ router.get('/get-all-type', ProductController.getAllType)
 router.get('/get-all-device-type', ProductController.getAllDeviceType)
 router.get('/filter', ProductController.filterProducts);
 router.get('/top-selling', ProductController.getTopSellingProducts);
+router.get('/recommend/:id', ProductController.getRecommendProduct)
 
 //review Product
 router.post('/details/review/:id', authUserRMiddleware, ProductController.addProductReview);
@@ -21,5 +22,7 @@ router.get('/details/reviews/:id', ProductController.getProductReviews);
 // Ẩn bình luận
 router.put('/details/review/hide/:productId/:reviewId', authRMiddleware, ProductController.hideProductReview);
 router.put('/details/review/unhide/:productId/:reviewId', authRMiddleware, ProductController.unhideProductReview);
+
+router.get('/brands', ProductController.getAllBrands);
 
 module.exports = router

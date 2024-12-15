@@ -17,7 +17,7 @@ const createProduct = (newProduct) => {
           watchSpecs,
           laptopSpecs,
           tabletSpecs,
-          headphoneSpecs,
+          audioSpecs,
           loudspeakerSpecs,
         } = newProduct;
         try{
@@ -45,8 +45,8 @@ const createProduct = (newProduct) => {
               case "tablet":
                 specs = { tabletSpecs };
                 break;
-              case "headphone":
-                specs = { headphoneSpecs };
+              case "audio":
+                specs = { audioSpecs };
                 break;
               case "loudspeaker":
                 specs = { loudspeakerSpecs };
@@ -134,6 +134,43 @@ const getDetailsProduct = (id) => {
     })
 }
 
+const getRecommendProduct = (id) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const product = await Product.findById(id);
+            if (!product) {
+                resolve({
+                    status: 'ERROR',
+                    message: 'Product not found',
+                });
+                return;
+            }
+            
+            const relatedProducts = await Product.find({
+                _id: { $ne: id }, 
+                countInStock: { $gt: 0 },   
+                $or: [ 
+                    { deviceType: product.deviceType }, 
+                    { type: product.type } 
+                ] 
+            })
+            .sort({ selled: -1 })  
+            .limit(5);  
+
+            resolve({
+                status: 'OK',
+                message: 'SUCCESS',
+                data: {
+                    product,
+                    relatedProducts
+                }
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
 const deleteProduct = (id) => {
     return new Promise(async (resolve, reject) =>{
         try{
@@ -158,47 +195,48 @@ const deleteProduct = (id) => {
     })
 }
 
-const getAllProduct = (limit, page, sort, filter, priceRange, rating ) => {
+const getAllProduct = (limit, page, sort, filter ) => {
     
     return new Promise(async (resolve, reject) =>{
         try{
-            const query = {};
+            
             const totalProduct = await Product.countDocuments()
-            if(filter ){                
-                label = filter[0]
-                const allObjectFilter = await Product.find({[label]: {'$regex': filter[1]}}).limit(limit).skip(page * limit)
+            if (filter) { 
+                label = filter[0] 
+                const allObjectFilter = await Product.find({ [label]: { '$regex': `.*${filter[1]}.*`, '$options': 'i' } }).limit(limit).skip(page * limit) 
                 resolve({
                     status: 'OK',
                     message: 'SUCCESS',
                     data: allObjectFilter,
                     total: totalProduct,
-                    pageCurrent: Number(page+ 1),
-                    totalPage: Math.ceil(totalProduct/ limit)
-                })  
-            }
-            if(sort){                
-                const objectSort = {}
-                objectSort[sort[1]] = sort[0]
-                const allProductSort = await Product.find().limit(limit).skip(page * limit).sort(objectSort)
+                    pageCurrent: Number(page + 1),
+                    totalPage: Math.ceil(totalProduct / limit)
+                })
+            } 
+            
+            if (sort) { 
+                const objectSort = {} 
+                objectSort[sort[1]] = sort[0] 
+                const allProductSort = await Product.find().limit(limit).skip(page * limit).sort(objectSort) 
                 resolve({
                     status: 'OK',
                     message: 'SUCCESS',
                     data: allProductSort,
                     total: totalProduct,
-                    pageCurrent: Number(page+ 1),
-                    totalPage: Math.ceil(totalProduct/ limit)
-                })      
-                
+                    pageCurrent: Number(page + 1),
+                    totalPage: Math.ceil(totalProduct / limit)
+                })
+            } else { 
+                const allProduct = await Product.find().limit(limit).skip(page * limit) 
+                resolve({
+                    status: 'OK',
+                    message: 'SUCCESS',
+                    data: allProduct,
+                    total: totalProduct,
+                    pageCurrent: Number(page + 1),
+                    totalPage: Math.ceil(totalProduct / limit)
+                })
             }
-            const allProduct = await Product.find().limit(limit).skip(page * limit)
-            resolve({
-                status: 'OK',
-                message: 'SUCCESS',
-                data: allProduct,
-                total: totalProduct,
-                pageCurrent: Number(page+ 1),
-                totalPage: Math.ceil(totalProduct/ limit)
-            })
         } catch (e){
             reject(e)
         }
@@ -374,7 +412,7 @@ const getProductReviews = (productId) => {
 
 const getTopSellingProducts = async (limit = 6) => {
     try {
-      // Sort by 'selled' in descending order and limit the results
+      
       const topSellingProducts = await Product.find({})
         .sort({ selled: -1 })
         .limit(limit);
@@ -388,8 +426,7 @@ const filterProducts = (filters, limit, page) => {
     return new Promise(async (resolve, reject) => {
         try {
             const { type, deviceType, minPrice, maxPrice, minRating, maxRating } = filters;
-
-            // Build query object dynamically based on filters
+ 
             let query = {};
             if (type !== 'all') {
                 query.type = type;
@@ -440,5 +477,6 @@ module.exports={
     getAllDeviceType,
     getProductsByDeviceType,
     filterProducts,
-    getTopSellingProducts
+    getTopSellingProducts,
+    getRecommendProduct
 }

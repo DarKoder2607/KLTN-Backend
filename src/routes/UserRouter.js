@@ -15,5 +15,10 @@ router.post('/delete-many', authMiddleware, UserController.deleteMany)
 router.post('/forgot-password', UserController.forgotPassword);
 router.post('/reset-password', UserController.resetPassword);
 router.post('/sign-in-google', UserController.createGoogleUser)
+router.put('/lock/:id', authMiddleware, UserController.lockUser);
+router.put('/unlock/:id', authMiddleware, UserController.unlockUser);
+router.get('/:id/notifications', UserController.getUserNotifications);
+router.put('/:id/notifications/read', UserController.markNotificationsAsRead);
+
 
 module.exports = router

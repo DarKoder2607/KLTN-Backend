@@ -14,7 +14,16 @@ const userSchema = new mongoose.Schema(
         // refresh_token: {type: String, required: true},
         rewardPoints: { type: Number, default: 0 },
         resetPasswordToken: {type: String},
-        resetPasswordExpires: {type: Date}
+        resetPasswordExpires: {type: Date},
+        isLocked: { type: Boolean, default: false },
+        notifications: [
+            {
+                title: { type: String, required: true },
+                content: { type: String, required: true },
+                read: { type: Boolean, default: false },
+                createdAt: { type: Date, default: Date.now }
+            }
+        ]
     },
     {
         timestamps: true

@@ -18,7 +18,7 @@ const createProduct = async(req, res ) => {
             watchSpecs,
             laptopSpecs,
             tabletSpecs,
-            headphoneSpecs,
+            audioSpecs,
             loudspeakerSpecs,
           } = req.body;
           if (
@@ -74,6 +74,24 @@ const getDetailsProduct = async(req, res ) => {
             })
         }
         const response = await ProductService.getDetailsProduct(productId)
+        return res.status(200).json(response)
+    }catch(e){
+        return res.status(404).json({
+            message: e
+        })
+    }
+}
+
+const getRecommendProduct = async(req, res ) => {
+    try{
+        const productId = req.params.id
+        if(!productId){
+            return res.status(200).json({
+                status: 'ERR',
+                message: 'The productId is required'
+            })
+        }
+        const response = await ProductService.getRecommendProduct(productId)
         return res.status(200).json(response)
     }catch(e){
         return res.status(404).json({
@@ -314,7 +332,24 @@ const getTopSellingProducts = async (req, res) => {
       });
     }
   };
-  
+
+  const getAllBrands = async (req, res) => {
+    try {
+        const brands = await Product.distinct('type'); // Lấy danh sách thương hiệu duy nhất
+        res.status(200).json({
+            status: 'OK',
+            data: brands,
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'ERR',
+            message: 'Failed to retrieve brands',
+            error: error.message,
+        });
+    }
+};
+
+
 
 module.exports = {
     createProduct,
@@ -331,5 +366,7 @@ module.exports = {
     getAllDeviceType,
     getProductsByDeviceType,
     filterProducts,
-    getTopSellingProducts
+    getTopSellingProducts,
+    getAllBrands,
+    getRecommendProduct
 }

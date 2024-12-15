@@ -119,14 +119,29 @@ const createOrder = async (newOrder) => {
         });
 
        
+        const notification = { 
+            title: isPaid ? 'Thanh toán thành công' : 'Đặt hàng thành công', 
+            content: isPaid 
+                ? `Đơn hàng của bạn đã được thanh toán thành công. Tổng giá trị: ${totalPrice} VND.` 
+                : `Đơn hàng của bạn đã được đặt thành công. Tổng giá trị: ${totalPrice} VND. Vui lòng thanh toán khi nhận hàng` 
+        };
 
-            
+        await User.findByIdAndUpdate(user, { 
+            $push: { notifications: notification } 
+        });   
 
         if (isPaid === true) {
             await User.findByIdAndUpdate(user, {
                 $inc: {
                     rewardPoints: rewardPointsEarned - (rewardPointsUsed || 0)
+                },
+                $push: { 
+                    notifications: { 
+                        title: 'Điểm thưởng đã được cộng', 
+                        content: `Bạn đã nhận được ${rewardPointsEarned} điểm thưởng từ đơn hàng.` 
+                    } 
                 }
+
             });
         }  
 
@@ -241,7 +256,20 @@ const cancelOrderDetails = (id, data) => {
                         resolve({
                             status: 'ERR',
                             message: 'The order is not defined'
-                        })
+                        });
+                    } else {
+                        const userId = order.user; 
+                        if (userId) {
+                            const notification = {
+                                title: 'Hủy đơn hàng thành công',
+                                content: `Đơn hàng mã ${order._id} đã bị hủy thành công. Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.`,
+                            };
+                            await User.findByIdAndUpdate(
+                                userId,
+                                { $push: { notifications: notification } }, 
+                                { new: true }
+                            );
+                        }
                     }
                 } else {
                     return{
@@ -257,7 +285,7 @@ const cancelOrderDetails = (id, data) => {
             if(newData) {
                 resolve({
                     status: 'ERR',
-                    message: `San pham voi id: ${newData} khong ton tai`
+                    message: `Sản phẩm với ID: ${newData} không tồn tại`
                 })
             }
             resolve({
@@ -303,6 +331,10 @@ const updateOrderStatus = (orderId, updateFields) => {
                 if (user) {
                     user.rewardPoints -= order.rewardPointsUsed;
                     user.rewardPoints += order.rewardPointsEarned; 
+                    user.notifications.push({
+                        title: 'Điểm thưởng đã được cộng',
+                        content: `Bạn đã thanh toán thành công đơn hàng. Bạn đã nhận được ${order.rewardPointsEarned} điểm thưởng từ đơn hàng của mình.`
+                    });
                     await user.save();
                 }
             }

@@ -81,7 +81,7 @@ const tabletSchema = new mongoose.Schema({
 
 });
 
-const headphoneSchema = new mongoose.Schema({
+const audioSchema = new mongoose.Schema({
   bluetooth: { type: String },
   battery: { type: String },
   length: {type:String},
@@ -113,14 +113,14 @@ const productSchema = new mongoose.Schema(
         countInStock: {type: Number, required: true},
         //rating: {type: Number, required: true},
         deviceType: { type: String, required: true ,
-          enum: ['phone', 'watch', 'laptop', 'tablet', 'headphone', 'loudspeaker']
+          enum: ['phone', 'watch', 'laptop', 'tablet', 'audio', 'loudspeaker']
         }, // loại thiết bị 
         //thông số ki thuật
         phoneSpecs: phoneSchema,
         watchSpecs: watchSchema,
         laptopSpecs: laptopSchema,
         tabletSpecs: tabletSchema,
-        headphoneSpecs: headphoneSchema,
+        audioSpecs: audioSchema,
         loudspeakerSpecs: loudspeakerSchema,
         
         relatedImages: { type: [String], validate: [arrayLimit, '{PATH} exceeds the limit of 6'] },
@@ -135,6 +135,21 @@ const productSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        isInEvent: { 
+          type: Boolean, 
+          default: false 
+        },
+        eventNames: {
+          type: [String], 
+          default: [],
+        },
+        eventIds: {
+            type: [mongoose.Schema.Types.ObjectId],  
+            ref: 'Event',
+            default: [],
+        },
+        originPrice: {type: Number, default: 0},
+        originDiscount: {type: Number, default: 0}
     },
     {
         timestamps: true,

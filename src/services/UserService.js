@@ -51,6 +51,13 @@ const createGoogleUser = (googleUser) => {
                 });
             }
  
+            if (user.isLocked) {
+                return resolve({
+                    status: 'ERR',
+                    message: 'This account is locked',
+                });
+            }
+
             const access_token = await genneralAccessToken({
                 id: user.id,
                 isAdmin: user.isAdmin
@@ -87,6 +94,14 @@ const loginUser = (userLogin) => {
                     message: 'The user is not defined'
                 })
             }
+
+            if (checkUser.isLocked) {
+                resolve({
+                    status: 'ERR',
+                    message: 'This account is locked'
+                });
+            }
+
             const comparePassword = bcrypt.compareSync(password, checkUser.password)
 
             if(!comparePassword){
@@ -285,6 +300,92 @@ const findUserByEmail = async (email) => {
     }
 }
 
+const lockUserAccount = (id) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const user = await User.findById(id);
+            if (!user) {
+                resolve({
+                    status: 'ERR',
+                    message: 'User not found'
+                });
+            }
+            user.isLocked = true;
+            await user.save();
+            resolve({
+                status: 'OK',
+                message: 'User account locked successfully',
+                data: user
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+const unlockUserAccount = (id) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const user = await User.findById(id);
+            if (!user) {
+                resolve({
+                    status: 'ERR',
+                    message: 'User not found'
+                });
+            }
+            user.isLocked = false;
+            await user.save();
+            resolve({
+                status: 'OK',
+                message: 'User account unlocked successfully',
+                data: user
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+const getUserNotifications = async (userId) => {
+    try {
+        if (!userId) {
+            throw new Error('User ID is required');
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+ 
+        const notifications = user.notifications.slice(-10).reverse();  
+        return notifications;
+    } catch (error) {
+        throw error;
+    }
+};
+
+const markNotificationsAsRead = async (userId) => {
+    try {
+        if (!userId) {
+            throw new Error('User ID is required');
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+ 
+        user.notifications.forEach(notification => {
+            notification.read = true;
+        });
+
+        await user.save();
+        return user.notifications;
+    } catch (error) {
+        throw error;
+    }
+};
+
 module.exports = {
     createUser,
     loginUser,
@@ -296,6 +397,10 @@ module.exports = {
     generateResetToken,
     resetPassword,
     findUserByEmail,
-    createGoogleUser
+    lockUserAccount,
+    unlockUserAccount,
+    createGoogleUser,
+    getUserNotifications,
+    markNotificationsAsRead
 };
 
