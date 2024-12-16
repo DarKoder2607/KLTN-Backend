@@ -3,6 +3,7 @@ const Order = require("../models/OrderProduct")
 const Product = require("../models/ProductModel");
 const User = require("../models/UserModel");
 const EmailService = require("../services/EmailService")
+const moment = require('moment');
 
 // const createOrder = (newOrder) => {
 //     return new Promise(async (resolve, reject) => {
@@ -424,8 +425,48 @@ const getTotalOrderPriceByProduct = () => {
     });
 };
 
+const getRevenueByUser = async ({ year, month, quarter }) => {
+    try {
+        let matchConditions = { isPaid: true };
 
+        if (year) {
+            matchConditions.paidAt = { $gte: moment().year(year).startOf('year').toDate(), $lte: moment().year(year).endOf('year').toDate() };
+        }
 
+        if (month) {
+            matchConditions.paidAt = { $gte: moment().month(month - 1).startOf('month').toDate(), $lte: moment().month(month - 1).endOf('month').toDate() };
+        }
+
+        if (quarter) {
+            const startMonth = (quarter - 1) * 3;
+            matchConditions.paidAt = { $gte: moment().month(startMonth).startOf('month').toDate(), $lte: moment().month(startMonth + 2).endOf('month').toDate() };
+        }
+
+        const orders = await Order.aggregate([
+            { $match: matchConditions },
+            { $group: {
+                _id: "$user", 
+                totalRevenue: { $sum: "$totalPrice" },
+            }},
+            { $lookup: {
+                from: 'users',
+                localField: '_id',
+                foreignField: '_id',
+                as: 'userDetails'
+            }},
+            { $unwind: "$userDetails" },
+            { $project: {
+                userName: "$userDetails.name",
+                userEmail: "$userDetails.email",
+                totalRevenue: 1
+            }}
+        ]);
+
+        return orders;
+    } catch (error) {
+        throw new Error(error.message);
+    }
+};
 
 module.exports = {
     createOrder,
@@ -434,5 +475,6 @@ module.exports = {
     cancelOrderDetails,
     getAllOrder,
     updateOrderStatus,
-    getTotalOrderPriceByProduct
+    getTotalOrderPriceByProduct,
+    getRevenueByUser
 }

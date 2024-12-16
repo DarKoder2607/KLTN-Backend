@@ -310,6 +310,13 @@ const lockUserAccount = (id) => {
                     message: 'User not found'
                 });
             }
+
+            if (user.isAdmin) {
+                return resolve({
+                    status: 'ERR',
+                    message: 'Không thể khóa tài khoản của quản trị viên'
+                });
+            }
             user.isLocked = true;
             await user.save();
             resolve({

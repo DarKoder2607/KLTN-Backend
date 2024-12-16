@@ -11,6 +11,6 @@ router.get('/get-all-order',authMiddleware, OrderController.getAllOrder)
 router.put('/mark-as-delivered/:id', authMiddleware, OrderController.markAsDelivered)
 router.put('/mark-as-paid/:id', authMiddleware, OrderController.markAsPaid)
 router.get('/total-order-price-by-product', OrderController.getTotalOrderPriceByProduct);
-
+router.get('/revenue-by-user', OrderController.getRevenueByUser);
 
 module.exports = router

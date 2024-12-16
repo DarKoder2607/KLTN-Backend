@@ -15,6 +15,7 @@ router.get('/get-all-device-type', ProductController.getAllDeviceType)
 router.get('/filter', ProductController.filterProducts);
 router.get('/top-selling', ProductController.getTopSellingProducts);
 router.get('/recommend/:id', ProductController.getRecommendProduct)
+router.put('/toggleVisibility/:id', authMiddleware, ProductController.toggleProductVisibility);
 
 //review Product
 router.post('/details/review/:id', authUserRMiddleware, ProductController.addProductReview);

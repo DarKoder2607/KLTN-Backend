@@ -149,8 +149,10 @@ const productSchema = new mongoose.Schema(
             default: [],
         },
         originPrice: {type: Number, default: 0},
-        originDiscount: {type: Number, default: 0}
+        originDiscount: {type: Number, default: 0},
+        isHidden: { type: Boolean, default: false } 
     },
+    
     {
         timestamps: true,
     }

@@ -35,6 +35,8 @@ const authUserMiddleware = (req, res, next) =>{
             })
         }
         const { payload } = user
+
+        
         if(user?.isAdmin || user?.id === userId){
            
             next()
@@ -62,8 +64,15 @@ const authCartMiddleware = (req, res, next) => {
           status: 'ERROR'
         });
       }
+
+      if (user.isAdmin) {
+        return res.status(403).json({
+            message: 'Quản trị viên không thể thực hiện thao tác này',
+            status: 'ERROR'
+        });
+    }
   
-      req.user = user; // Lưu thông tin người dùng vào request
+      req.user = user;  
       next();
     });
   };
@@ -90,6 +99,13 @@ const authUserRMiddleware = (req, res, next) => {
             return res.status(403).json({
                 message: "Invalid or expired token",
                 status: "ERROR",
+            });
+        }
+        
+        if (user.isAdmin) {
+            return res.status(403).json({
+                message: 'Admin cannot perform this actions.',
+                status: 'ERROR'
             });
         }
 

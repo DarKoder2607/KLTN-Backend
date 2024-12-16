@@ -72,7 +72,7 @@ const createProduct = (newProduct) => {
             if(createdProduct){
                 resolve({
                     status: 'OK',
-                    message: 'SUCCESS',
+                    message: 'Thêm sản phẩm mới thành công',
                     data: createdProduct
                 })
             }
@@ -101,7 +101,7 @@ const updateProduct = (id , data) => {
 
             resolve({
                 status: 'OK',
-                message: 'SUCCESS',
+                message: 'Cập nhật thông tin sản phẩm thành công',
                 data: updatedProduct
             })
         }catch (e){
@@ -371,7 +371,7 @@ const addProductReview = (userId, productId, reviewData) => {
 
             resolve({
                 status: 'OK',
-                message: 'Review added successfully',
+                message: 'Bình luận và đánh giá của bạn đã được thêm thành công',
                 data: newReview,
             });
         } catch (e) {
@@ -463,6 +463,21 @@ const filterProducts = (filters, limit, page) => {
     });
 };
 
+const toggleProductVisibility = async (productId) => {
+    try {
+        const product = await Product.findById(productId);
+        if (!product) {
+            throw new Error('Product not found');
+        }
+
+        product.isHidden = !product.isHidden;
+        await product.save();
+        
+        return product;
+    } catch (error) {
+        throw new Error(`Failed to toggle product visibility: ${error.message}`);
+    }
+};
 
 module.exports={
     createProduct,
@@ -478,5 +493,6 @@ module.exports={
     getProductsByDeviceType,
     filterProducts,
     getTopSellingProducts,
-    getRecommendProduct
+    getRecommendProduct,
+    toggleProductVisibility
 }

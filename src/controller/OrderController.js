@@ -166,6 +166,16 @@ const getTotalOrderPriceByProduct = async (req, res) => {
     }
 };
 
+const getRevenueByUser = async (req, res) => {
+    try {
+        const { year, month, quarter } = req.query;
+        const orders = await OrderService.getRevenueByUser({ year, month, quarter });
+        res.status(200).json(orders);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     createOrder,
     getAllOrderDetails,
@@ -174,5 +184,7 @@ module.exports = {
     getAllOrder,
     markAsDelivered,
     markAsPaid,
-    getTotalOrderPriceByProduct 
+    getTotalOrderPriceByProduct ,
+    getRevenueByUser
+
 }
