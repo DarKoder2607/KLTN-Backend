@@ -80,10 +80,33 @@ const moment = require('moment');
 
 const createOrder = async (newOrder) => {
     const { orderItems, paymentMethod, itemsPrice, shippingPrice, totalPrice, fullName, address, city, 
-        phone, user, isPaid, paidAt, email, rewardPointsUsed } = newOrder;
+        phone, user, isPaid, paidAt, email, rewardPointsUsed,ward, district } = newOrder;
     
-    try {
-        // 1. Kiểm tra và cập nhật số lượng sản phẩm
+    try { 
+        const cityCodes = {
+            'An Giang': 'AG', 'Bà Rịa - Vũng Tàu': 'BV', 'Bạc Liêu': 'BL', 'Bắc Kạn': 'BK',
+            'Bắc Giang': 'BG', 'Bắc Ninh': 'BN', 'Bến Tre': 'BT', 'Bình Dương': 'BD',
+            'Bình Định': 'BDI', 'Bình Phước': 'BP', 'Bình Thuận': 'BT', 'Cà Mau': 'CM',
+            'Cao Bằng': 'CB', 'Cần Thơ': 'CT', 'Đà Nẵng': 'DN', 'Đắk Lắk': 'DL', 'Đắk Nông': 'DNO',
+            'Điện Biên': 'DB', 'Đồng Nai': 'DNA', 'Đồng Tháp': 'DT', 'Gia Lai': 'GL', 'Hà Giang': 'HG',
+            'Hà Nam': 'HNA', 'Hà Nội': 'HN', 'Hà Tĩnh': 'HT', 'Hải Dương': 'HD', 'Hải Phòng': 'HP',
+            'Hậu Giang': 'HGI', 'Hòa Bình': 'HB', 'Hồ Chí Minh': 'SG', 'Hưng Yên': 'HY',
+            'Khánh Hòa': 'KH', 'Kiên Giang': 'KG', 'Kon Tum': 'KT', 'Lai Châu': 'LC', 'Lạng Sơn': 'LS',
+            'Lào Cai': 'LCA', 'Lâm Đồng': 'LD', 'Long An': 'LA', 'Nam Định': 'ND', 'Nghệ An': 'NA',
+            'Ninh Bình': 'NB', 'Ninh Thuận': 'NT', 'Phú Thọ': 'PT', 'Phú Yên': 'PY', 'Quảng Bình': 'QB',
+            'Quảng Nam': 'QNA', 'Quảng Ngãi': 'QNG', 'Quảng Ninh': 'QN', 'Quảng Trị': 'QT',
+            'Sóc Trăng': 'ST', 'Sơn La': 'SL', 'Tây Ninh': 'TN', 'Thái Bình': 'TB', 'Thái Nguyên': 'TNG',
+            'Thanh Hóa': 'TH', 'Thừa Thiên Huế': 'TTH', 'Tiền Giang': 'TG', 'Trà Vinh': 'TV',
+            'Tuyên Quang': 'TQ', 'Vĩnh Long': 'VL', 'Vĩnh Phúc': 'VP', 'Yên Bái': 'YB'
+        };
+
+        const cityCode = cityCodes[city] || 'ORD'; 
+        const today = new Date();
+        const dateCode = today.toISOString().slice(0, 10).replace(/-/g, '');  
+        const countOrdersToday = await Order.countDocuments({ createdAt: { $gte: new Date(today.setHours(0, 0, 0, 0)) } }); 
+        const orderCode = `${cityCode}-${dateCode}-${String(countOrdersToday + 1).padStart(4, '0')}`;
+
+
         const promises = orderItems.map(async (order) => {
             const productData = await Product.findOneAndUpdate(
                 { _id: order.product, countInStock: { $gte: order.amount } },
@@ -103,11 +126,10 @@ const createOrder = async (newOrder) => {
             const discountFromPoints = rewardPointsUsed * 3; // 1 điểm = 3 VND
             if (totalPrice < discountFromPoints) throw new Error('Số điểm sử dụng vượt quá giá trị đơn hàng');
         }
-
-        // 2. Tạo đơn hàng
+ 
         const createdOrder = await Order.create({
             orderItems,
-            shippingAddress: { fullName, address, city, phone },
+            shippingAddress: { fullName, address, city, phone, ward, district },
             paymentMethod,
             itemsPrice,
             shippingPrice,
@@ -117,14 +139,15 @@ const createOrder = async (newOrder) => {
             paidAt,
             rewardPointsUsed: rewardPointsUsed || 0,
             rewardPointsEarned,
+            orderCode
         });
 
        
         const notification = { 
             title: isPaid ? 'Thanh toán thành công' : 'Đặt hàng thành công', 
             content: isPaid 
-                ? `Đơn hàng của bạn đã được thanh toán thành công. Tổng giá trị: ${totalPrice} VND.` 
-                : `Đơn hàng của bạn đã được đặt thành công. Tổng giá trị: ${totalPrice} VND. Vui lòng thanh toán khi nhận hàng` 
+                ? `Đơn hàng ${orderCode} của bạn đã được thanh toán thành công. Tổng giá trị: ${totalPrice.toLocaleString()} VND.` 
+                : `Đơn hàng ${orderCode} của bạn đã được đặt thành công. Tổng giá trị: ${totalPrice.toLocaleString()} VND. Vui lòng thanh toán khi nhận hàng` 
         };
 
         await User.findByIdAndUpdate(user, { 
@@ -139,19 +162,17 @@ const createOrder = async (newOrder) => {
                 $push: { 
                     notifications: { 
                         title: 'Điểm thưởng đã được cộng', 
-                        content: `Bạn đã nhận được ${rewardPointsEarned} điểm thưởng từ đơn hàng.` 
+                        content: `Bạn đã nhận được ${rewardPointsEarned.toLocaleString()} điểm thưởng từ đơn hàng ${orderCode}.` 
                     } 
                 }
 
             });
         }  
-
-        // 3. Gửi email xác nhận đơn hàng
+ 
         if (createdOrder) {
-            await EmailService.sendEmailCreateOrder(email, orderItems);
+            await EmailService.sendEmailCreateOrder(email, createdOrder);
         }
-
-        // 4. Xóa các sản phẩm đã đặt mua khỏi giỏ hàng của người dùng
+ 
         const cart = await Cart.findOne({ user });
         if (cart) {
             cart.cartItems = cart.cartItems.filter(cartItem => 
@@ -239,15 +260,15 @@ const cancelOrderDetails = (id, data) => {
     return new Promise(async (resolve, reject) => {
         try {
             let order = []
-            const promises = data.map(async (order) => {
+            const promises = data.map(async (orderdata) => {
                 const productData = await Product.findOneAndUpdate(
                     {
-                    _id: order.product,
-                    selled: {$gte: order.amount}
+                    _id: orderdata.product,
+                    selled: {$gte: orderdata.amount}
                     },
                     {$inc: {
-                        countInStock: +order.amount,
-                        selled: -order.amount
+                        countInStock: +orderdata.amount,
+                        selled: -orderdata.amount
                     }},
                     {new: true}
                 )
@@ -260,17 +281,61 @@ const cancelOrderDetails = (id, data) => {
                         });
                     } else {
                         const userId = order.user; 
+
                         if (userId) {
-                            const notification = {
-                                title: 'Hủy đơn hàng thành công',
-                                content: `Đơn hàng mã ${order._id} đã bị hủy thành công. Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.`,
-                            };
-                            await User.findByIdAndUpdate(
-                                userId,
-                                { $push: { notifications: notification } }, 
-                                { new: true }
-                            );
+                            
+                            if(!order.isPaid){
+                                const notification = {
+                                    title: 'Hủy đơn hàng thành công',
+                                    content: `Đơn hàng mã ${order._id} đã bị hủy thành công. Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.`,
+                                };
+                                await User.findByIdAndUpdate(
+                                    userId,
+                                    { $push: { notifications: notification } }, 
+                                    { new: true }
+                                );
+                            }else{
+                                const user = await User.findById(userId);
+                              if(user.rewardPoints >= Math.floor(order.totalPrice/1000)){
+                                const reward = user.rewardPoints -Math.floor(order.totalPrice/1000);
+                                const notification = {
+                                    title: 'Hủy đơn hàng thành công', 
+                                    content: `Đơn hàng mã ${order.orderCode} đã bị hủy thành công. Chúng tôi sẽ hoàn trả số tiền ${order.totalPrice.toLocaleString()} VNĐ trong thời gian nhanh nhất.`, 
+                                };
+                                await User.findByIdAndUpdate(
+                                    userId,
+                                    { $push: { notifications: notification } }, 
+                                    { new: true }
+                                );
+                            
+                                user.rewardPoints -= order.totalPrice/1000;
+                                user.notifications.push({
+                                    title: 'Trừ điểm thưởng thành công',
+                                    content: `${Math.floor(order.totalPrice/1000).toLocaleString()} điểm đã được trừ vào tài khoản của bạn`
+                                });
+                                await user.save();
+                              }else{
+                                const swap = Math.floor(order.totalPrice/1000) - user.rewardPoints; 
+                                const totalMonney = order.totalPrice - swap*1000;
+                                user.notifications.push({
+                                    title: 'Không đủ điểm thưởng',
+                                    content: `Điểm của bạn hiện tại không đủ để xóa đơn hàng. Chúng tôi quy đổi 1000 điểm thưởng = 1000VND. Bạn thiếu ${swap} điểm = ${swap*1000} VNĐ`
+                                });
+                                user.rewardPoints = 0;
+                                const notification = {
+                                    title: 'Hủy đơn hàng thành công', 
+                                    content: `Đơn hàng mã ${order.orderCode} đã bị hủy thành công. Chúng tôi sẽ hoàn trả số tiền ${totalMonney.toLocaleString()} VNĐ trong thời gian nhanh nhất.`, 
+                                };
+                                await User.findByIdAndUpdate(
+                                    userId,
+                                    { $push: { notifications: notification } }, 
+                                    { new: true }
+                                );
+                                await user.save();
+                              }       
+                            }
                         }
+                        
                     }
                 } else {
                     return{
@@ -334,7 +399,7 @@ const updateOrderStatus = (orderId, updateFields) => {
                     user.rewardPoints += order.rewardPointsEarned; 
                     user.notifications.push({
                         title: 'Điểm thưởng đã được cộng',
-                        content: `Bạn đã thanh toán thành công đơn hàng. Bạn đã nhận được ${order.rewardPointsEarned} điểm thưởng từ đơn hàng của mình.`
+                        content: `Bạn đã thanh toán thành công đơn hàng. Bạn đã nhận được ${order.rewardPointsEarned} điểm thưởng từ đơn hàng ${order.orderCode} của mình.`
                     });
                     await user.save();
                 }

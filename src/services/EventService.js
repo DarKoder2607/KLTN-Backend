@@ -320,8 +320,8 @@ const updateEventStatusByStartDate = async () => {
                     product.price = product.price - event.discountValue;
                     product.discount = 0;
                 } else if (event.discountType === 'percentage') {
-                    product.originPrice = product.price;
                     product.originDiscount = product.discount;
+                    product.originPrice = product.price;
                     product.discount = event.discountValue;
                 }
 

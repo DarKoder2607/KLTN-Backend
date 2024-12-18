@@ -23,7 +23,15 @@ const userSchema = new mongoose.Schema(
                 read: { type: Boolean, default: false },
                 createdAt: { type: Date, default: Date.now }
             }
-        ]
+        ],
+        shippingAddress: {
+            nameship: { type: String},
+            addressShip: {type: String},
+            wardShip: {type: String},
+            districtShip: {type: String},
+            cityShip: {type: String},
+            phoneShip: { type: String},
+        },
     },
     {
         timestamps: true

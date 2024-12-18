@@ -20,6 +20,9 @@ const orderSchema = new mongoose.Schema({
         address: { type: String, required: true },
         city: { type: String, required: true },
         phone: { type: String, required: true },
+        ward: {type: String, required: true},
+        district: {type: String, required: true},
+
     },
     paymentMethod: { type: String, required: true },
     itemsPrice: { type: Number, required: true },
@@ -28,10 +31,11 @@ const orderSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     isPaid: { type: Boolean, default: false },
     paidAt: { type: Date },
-    isDelivered: { type: Boolean, default: false },
+    isDelivered: {  type: String, enum: ['Chuẩn bị hàng', 'Đang vận chuyển', 'Đã giao'], default: 'Chuẩn bị hàng', },
     deliveredAt: { type: Date },
     rewardPointsEarned: { type: Number, default: 0 },  
     rewardPointsUsed: { type: Number, default: 0 },
+    orderCode: { type: String, required: true },
 },
     {
         timestamps: true,

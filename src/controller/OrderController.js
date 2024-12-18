@@ -2,8 +2,8 @@ const OrderService = require('../services/OrderService')
 
 const createOrder = async (req, res) => {
     try { 
-        const { paymentMethod, itemsPrice, shippingPrice, totalPrice, fullName, address, city, phone, rewardPointsUsed } = req.body
-        if (!paymentMethod || !itemsPrice || !shippingPrice || !totalPrice || !fullName || !address || !city || !phone) {
+        const { paymentMethod, itemsPrice, shippingPrice, totalPrice, fullName, address, city, phone, rewardPointsUsed, ward, district } = req.body
+        if (!paymentMethod || !itemsPrice || !shippingPrice || !totalPrice || !fullName || !address || !city || !phone || !ward || !district) {
             return res.status(200).json({
                 status: 'ERR',
                 message: 'The input is required'
@@ -132,7 +132,23 @@ const markAsDelivered = async (req, res) => {
                 message: 'The orderId is required'
             });
         }
-        const response = await OrderService.updateOrderStatus(orderId, { isDelivered: true, deliveredAt: new Date() });
+        const response = await OrderService.updateOrderStatus(orderId, { isDelivered: 'Đang vận chuyển', deliveredAt: new Date() });
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(500).json({ message: e });
+    }
+}
+
+const markAsDelivered2 = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        if (!orderId) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: 'The orderId is required'
+            });
+        }
+        const response = await OrderService.updateOrderStatus(orderId, { isDelivered: 'Đã giao', deliveredAt: new Date() });
         return res.status(200).json(response);
     } catch (e) {
         return res.status(500).json({ message: e });
@@ -185,6 +201,7 @@ module.exports = {
     markAsDelivered,
     markAsPaid,
     getTotalOrderPriceByProduct ,
-    getRevenueByUser
+    getRevenueByUser,
+    markAsDelivered2
 
 }
